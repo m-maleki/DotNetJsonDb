@@ -10,7 +10,7 @@ Error Handling: Exceptions are thrown for common errors like file access issues 
 
 # Getting Started
 
-Install the Package: NuGet\Install-Package DotNetJsonDb -Version 1.0.0
+Install the Package: NuGet\Install-Package DotNetJsonDb
 
 # Usage Example:
 
