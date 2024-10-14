@@ -8,7 +8,7 @@ namespace DotNetJsonDb
         private readonly string _filePath;
         private readonly PropertyInfo _idProperty;
 
-        public JsonContext(string basePath)
+        public JsonContext(string basePath = "Database")
         {
             _filePath = Path.Combine(basePath, typeof(T).Name + ".json");
             Directory.CreateDirectory(Path.GetDirectoryName(_filePath));
@@ -27,9 +27,35 @@ namespace DotNetJsonDb
         {
             try
             {
-                using (var writer = File.AppendText(_filePath))
+                List<T> items = new List<T>();
+                if (File.Exists(_filePath))
                 {
-                    writer.WriteLine(JsonSerializer.Serialize(item));
+                    using (StreamReader reader = new StreamReader(_filePath))
+                    {
+                        string json = reader.ReadToEnd();
+
+                        if (!string.IsNullOrEmpty(json) && json.Trim().StartsWith("[") && json.Trim().EndsWith("]"))
+                        {
+                            try
+                            {
+                                items = JsonSerializer.Deserialize<List<T>>(json) ?? new List<T>();
+                            }
+                            catch (JsonException)
+                            {
+                                items = new List<T>();
+                            }
+                        }
+                    }
+                }
+
+                items.Add(item);
+
+                string newJson = JsonSerializer.Serialize(items);
+
+                using (FileStream fs = new FileStream(_filePath, FileMode.Create))
+                using (StreamWriter writer = new StreamWriter(fs))
+                {
+                    writer.Write(newJson);
                 }
             }
             catch (Exception ex)
@@ -38,74 +64,92 @@ namespace DotNetJsonDb
             }
         }
 
-        public T GetById(int id)
+        public T Get(int id)
         {
-            using (var reader = new StreamReader(_filePath))
+            try
             {
-                while (reader.ReadLine() is { } line)
+                using (var reader = new StreamReader(_filePath))
                 {
-                    var item = JsonSerializer.Deserialize<T>(line);
-                    if ((int)_idProperty.GetValue(item) == id)
-                    {
-                        return item;
-                    }
+                    string json = reader.ReadToEnd();
+                    var items = JsonSerializer.Deserialize<List<T>>(json) ?? new List<T>();
+
+                    return items.FirstOrDefault(item => (int)_idProperty.GetValue(item) == id);
                 }
             }
-
-            return null;
+            catch (Exception ex)
+            {
+                throw new JsonException($"Error getting data from {_filePath}: {ex.Message}");
+            }
         }
 
         public List<T> GetAll()
         {
-            var items = new List<T>();
-            using (var reader = new StreamReader(_filePath))
+            try
             {
-                while (reader.ReadLine() is { } line)
+                using (var reader = new StreamReader(_filePath))
                 {
-                    items.Add(JsonSerializer.Deserialize<T>(line));
+                    string json = reader.ReadToEnd();
+                    return JsonSerializer.Deserialize<List<T>>(json) ?? new List<T>();
                 }
             }
-
-            return items;
+            catch (Exception ex)
+            {
+                throw new JsonException($"Error reading data from {_filePath}: {ex.Message}");
+            }
         }
 
         public void Remove(int id)
         {
-            var tempFile = Path.GetTempFileName();
-
-            using (var reader = new StreamReader(_filePath))
-            using (var writer = new StreamWriter(tempFile))
+            try
             {
-                while (reader.ReadLine() is { } line)
+                using (var reader = new StreamReader(_filePath))
                 {
-                    var item = JsonSerializer.Deserialize<T>(line);
-                    if ((int)_idProperty.GetValue(item)! != id)
-                    {
-                        writer.WriteLine(line); 
-                    }
+                    string json = reader.ReadToEnd();
+                    var items = JsonSerializer.Deserialize<List<T>>(json) ?? new List<T>();
+
+                    items.RemoveAll(item => (int)_idProperty.GetValue(item)! == id);
+
+                    reader.Close();
+
+                    string newJson = JsonSerializer.Serialize(items);
+
+                    File.WriteAllText(_filePath, newJson);
                 }
             }
-
-            File.Delete(_filePath);
-            File.Move(tempFile, _filePath);
+            catch (Exception ex)
+            {
+                throw new JsonException($"Error removing data from {_filePath}: {ex.Message}");
+            }
         }
 
         public void Update(int id, T newItem)
         {
-            var tempFile = Path.GetTempFileName();
-
-            using (var reader = new StreamReader(_filePath))
-            using (var writer = new StreamWriter(tempFile))
+            try
             {
-                while (reader.ReadLine() is { } line)
+                using (var reader = new StreamReader(_filePath))
                 {
-                    var item = JsonSerializer.Deserialize<T>(line);
-                    writer.WriteLine((int)_idProperty.GetValue(item)! == id ? JsonSerializer.Serialize(newItem) : line);
+                    string json = reader.ReadToEnd();
+                    var items = JsonSerializer.Deserialize<List<T>>(json) ?? new List<T>();
+
+                    int index = items.FindIndex(item => (int)_idProperty.GetValue(item)! == id);
+                    if (index != -1)
+                    {
+                        items[index] = newItem;
+                    }
+
+                    string newJson = JsonSerializer.Serialize(items);
+
+                    reader.Close();
+
+                    File.WriteAllText(_filePath, newJson);
                 }
             }
-
-            File.Delete(_filePath);
-            File.Move(tempFile, _filePath);
+            catch (Exception ex)
+            {
+                throw new JsonException($"Error updating data in {_filePath}: {ex.Message}");
+            }
         }
+
+
     }
 }

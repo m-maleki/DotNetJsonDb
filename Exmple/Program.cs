@@ -9,7 +9,7 @@ var product = new Product { Id = 1 ,Name = "T-Shirt", Price = 19.99m };
 context.Add(product);
 
 // Get a product by ID
-var retrievedProduct = context.GetById(product.Id);
+var retrievedProduct = context.Get(product.Id);
 
 // Update the product
 retrievedProduct.Price = 24.99m;

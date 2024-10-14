@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
 	<metadata>
 		<id>DotNetJsonDb</id>
-		<version>1.0.2</version>
+		<version>1.0.3</version>
 		<title>DotNetJsonDb Library</title>
 		<authors>Masoud Maleki</authors>
 		<description>A simple JSON database library.</description>
