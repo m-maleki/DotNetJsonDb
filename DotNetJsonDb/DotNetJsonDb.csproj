@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Authors>Masoud Maleki</Authors>
+    <RepositoryUrl>https://github.com/m-maleki/DotNetJsonDb/</RepositoryUrl>
+    <Description>This is a lightweight C# library that provides basic CRUD (Create, Read, Update, Delete) operations for storing and retrieving data in JSON format.</Description>
+    <Version>1.0.1</Version>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+	<metadata>
+		<id>DotNetJsonDb</id>
+		<version>1.0.1</version>
+		<title>DotNetJsonDb Library</title>
+		<authors>Masoud Maleki</authors>
+		<description>A simple JSON database library.</description>
+		<tags>json, database, storage</tags>
+	</metadata>
+	<files>
+		<file src="bin\Release\DotNetJsonDb.dll" target="lib\netstandard2.0" />
+	</files>
+	<dependencies>
+		<dependency id="Newtonsoft.Json" version="13.0.1" />
+	</dependencies>
+</package>
