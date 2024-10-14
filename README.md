@@ -15,14 +15,7 @@ Install the Package: NuGet\Install-Package DotNetJsonDb
 # Usage Example:
 
 ```csharp
-using JsonDb;
-
-public class Product
-{
-  public int Id { get; set; }
-  public string Name { get; set; }
-  public decimal Price { get; set; }
-}
+using DotNetJsonDb;
 
 // Create a context instance specifying the base path for data files
 var context = new JsonContext<Product>("data");
@@ -44,4 +37,10 @@ var allProducts = context.GetAll();
 // Remove a product
 context.Remove(product.Id);
 
+public class Product
+{
+  public int Id { get; set; }
+  public string Name { get; set; }
+  public decimal Price { get; set; }
+}
 
