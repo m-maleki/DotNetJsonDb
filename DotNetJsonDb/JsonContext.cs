@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.Json;
 
 namespace DotNetJsonDb
@@ -17,10 +13,9 @@ namespace DotNetJsonDb
             _filePath = Path.Combine(basePath, typeof(T).Name + ".json");
             Directory.CreateDirectory(Path.GetDirectoryName(_filePath));
 
-            // Find the "Id" property using Reflection during construction
             _idProperty = typeof(T).GetProperties()
                 .FirstOrDefault(p => p.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) &&
-                                     p.PropertyType == typeof(int));
+                                     p.PropertyType == typeof(int))!;
 
             if (_idProperty == null)
             {
@@ -30,78 +25,87 @@ namespace DotNetJsonDb
 
         public void Add(T item)
         {
-            var existingItems = LoadData();
-            existingItems.Add(item);
-            SaveData(existingItems);
-        }
-
-        public T GetById(int id)
-        {
-            var items = LoadData();
-            return items.FirstOrDefault(item => (int)_idProperty.GetValue(item) == id);
-        }
-
-        public List<T> GetAll()
-        {
-            return LoadData();
-        }
-
-        public void Remove(int id)
-        {
-            var items = LoadData();
-            items.RemoveAll(item => (int)_idProperty.GetValue(item) == id);
-            SaveData(items);
-        }
-
-        public void Update(int id, T newItem)
-        {
-            var items = LoadData();
-            var index = items.FindIndex(item => (int)_idProperty.GetValue(item) == id);
-
-            if (index >= 0)
-            {
-                items[index] = newItem;
-                SaveData(items);
-            }
-            else
-            {
-                throw new KeyNotFoundException($"Item with ID {id} not found.");
-            }
-        }
-
-        private List<T> LoadData()
-        {
-            if (!File.Exists(_filePath))
-            {
-                return new List<T>();
-            }
-
             try
             {
-                using (var stream = File.OpenRead(_filePath))
+                using (var writer = File.AppendText(_filePath))
                 {
-                    return JsonSerializer.Deserialize<List<T>>(stream);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new JsonException($"Error loading data from {_filePath}: {ex.Message}");
-            }
-        }
-
-        private void SaveData(List<T> data)
-        {
-            try
-            {
-                using (var stream = File.OpenWrite(_filePath))
-                {
-                    JsonSerializer.Serialize(stream, data, new JsonSerializerOptions { WriteIndented = true });
+                    writer.WriteLine(JsonSerializer.Serialize(item));
                 }
             }
             catch (Exception ex)
             {
                 throw new JsonException($"Error saving data to {_filePath}: {ex.Message}");
             }
+        }
+
+        public T GetById(int id)
+        {
+            using (var reader = new StreamReader(_filePath))
+            {
+                while (reader.ReadLine() is { } line)
+                {
+                    var item = JsonSerializer.Deserialize<T>(line);
+                    if ((int)_idProperty.GetValue(item) == id)
+                    {
+                        return item;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public List<T> GetAll()
+        {
+            var items = new List<T>();
+            using (var reader = new StreamReader(_filePath))
+            {
+                while (reader.ReadLine() is { } line)
+                {
+                    items.Add(JsonSerializer.Deserialize<T>(line));
+                }
+            }
+
+            return items;
+        }
+
+        public void Remove(int id)
+        {
+            var tempFile = Path.GetTempFileName();
+
+            using (var reader = new StreamReader(_filePath))
+            using (var writer = new StreamWriter(tempFile))
+            {
+                while (reader.ReadLine() is { } line)
+                {
+                    var item = JsonSerializer.Deserialize<T>(line);
+                    if ((int)_idProperty.GetValue(item)! != id)
+                    {
+                        writer.WriteLine(line); 
+                    }
+                }
+            }
+
+            File.Delete(_filePath);
+            File.Move(tempFile, _filePath);
+        }
+
+        public void Update(int id, T newItem)
+        {
+            var tempFile = Path.GetTempFileName();
+
+            using (var reader = new StreamReader(_filePath))
+            using (var writer = new StreamWriter(tempFile))
+            {
+                while (reader.ReadLine() is { } line)
+                {
+                    var item = JsonSerializer.Deserialize<T>(line);
+                    writer.WriteLine((int)_idProperty.GetValue(item)! == id ? JsonSerializer.Serialize(newItem) : line);
+                }
+            }
+
+            File.Delete(_filePath);
+            File.Move(tempFile, _filePath);
         }
     }
 }
